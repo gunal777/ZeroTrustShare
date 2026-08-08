@@ -1,17 +1,12 @@
 const express = require('express');
+const shareController = require('../controllers/share.controller');
 
 const router = express.Router();
 
-router.post('/', (req, res) => {
-  res.json({msg: "default share"});
-});
+router.post('/', shareController.createShareLink);
 
-router.get('/:token', (req, res) => {
-  res.json({msg: "shared file"});
-});
+router.get('/:token', shareController.accessSharedFile);
 
-router.delete('/:token', (req, res) => {
-  res.json({msg: "delete share link"});
-});
+router.delete('/:token', shareController.revokeShareLink);
 
 module.exports = router;

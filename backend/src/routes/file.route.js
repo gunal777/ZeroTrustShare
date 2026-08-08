@@ -1,25 +1,16 @@
 const express = require('express');
+const fileController = require('../controllers/file.controller');
 
 const router = express.Router(); 
 
-router.get('/', (req, res) => {
-  res.json({msg: 'default'});
-});
+router.get('/', fileController.getFiles);
 
-router.post('/upload', (req, res) => {
-  res.json({msg: 'uplaod'});
-});
+router.post('/upload', fileController.uploadFile);
 
-router.get('/:id', (req, res) => {
-  res.json({msg: "single file"});
-});
+router.get('/:id', fileController.getFile);
 
-router.get('/:id/download', (req, res) => {
-  res.json({msg: "download"});
-});
+router.get('/:id/download', fileController.downloadFile);
 
-router.delete('/:id', (req, res) => {
-  res.json({msg: "delete"});
-});
+router.delete('/:id', fileController.deleteFile);
 
 module.exports = router;
