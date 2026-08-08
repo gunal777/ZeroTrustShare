@@ -1,25 +1,32 @@
 const createShareLink = async (req, res) => {
-    res.json({
-        message: "Create share link controller reached"
-    });
+  res.status(201).json({
+    success: true,
+    message: "Create share link endpoint",
+  });
 };
 
 const accessSharedFile = async (req, res) => {
-    res.json({
-        message: "Access shared file controller reached",
-        token: req.params.token
-    });
+  const { token } = req.params;
+
+  res.status(200).json({
+    success: true,
+    message: "Access shared file endpoint",
+    token,
+  });
 };
 
 const revokeShareLink = async (req, res) => {
-    res.json({
-        message: "Revoke share link controller reached",
-        token: req.params.token
-    });
+  const { token } = req.params;
+
+  res.status(200).json({
+    success: true,
+    message: "Revoke share link endpoint",
+    token,
+  });
 };
 
 module.exports = {
-    createShareLink,
-    accessSharedFile,
-    revokeShareLink
+  createShareLink,
+  accessSharedFile,
+  revokeShareLink,
 };
