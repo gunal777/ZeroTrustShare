@@ -6,6 +6,7 @@ const morgan = require('morgan');
 
 const fileRoutes = require('./routes/file.route');
 const shareRoutes = require('./routes/share.route');
+const errorHandler = require('./middleware/error.middleware');
 
 dotenv.config();
 
@@ -16,8 +17,12 @@ app.use(express.json());
 
 app.use(morgan("dev"));
 
+//api routes
 app.use("/api/files", fileRoutes);
 app.use('/api/share', shareRoutes);
+
+//error handler
+app.use(errorHandler);
 
 //connect to db
 connectDB().then(() => {
