@@ -8,8 +8,6 @@ router.post("/upload", upload.single("file"), fileController.uploadFile);
 
 router.get('/', fileController.getFiles);
 
-router.post('/upload', fileController.uploadFile);
-
 router.get('/:id', fileController.getFile);
 
 router.get('/:id/download', fileController.downloadFile);
