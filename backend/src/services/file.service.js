@@ -36,12 +36,14 @@ const uploadFile = async (fileData, ownerId) => {
   }
 };
 
+const FILE_PUBLIC_FIELDS = "-storagePath -storedName -__v";
+
 const getFiles = async (ownerId) => {
   const filter = ownerId ? { owner: ownerId } : {};
-  return File.find(filter).sort({ createdAt: -1 });
+  return File.find(filter).select(FILE_PUBLIC_FIELDS).sort({ createdAt: -1 });
 };
 
-const getFile = async (fileId) => File.findById(fileId);
+const getFile = async (fileId) => File.findById(fileId).select(FILE_PUBLIC_FIELDS);
 
 const downloadFile = async (fileId) => {
   const file = await File.findById(fileId);
