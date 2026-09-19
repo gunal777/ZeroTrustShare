@@ -6,6 +6,7 @@ const morgan = require('morgan');
 
 const fileRoutes = require('./routes/file.route');
 const shareRoutes = require('./routes/share.route');
+const authRoutes = require('./routes/auth.route');
 const errorHandler = require('./middleware/error.middleware');
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(morgan("dev"));
 //api routes
 app.use("/api/files", fileRoutes);
 app.use('/api/share', shareRoutes);
+app.use('/api/auth', authRoutes);
 
 //error handler
 app.use(errorHandler);
