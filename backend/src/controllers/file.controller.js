@@ -9,10 +9,10 @@ const uploadFile = async (req, res) => {
       });
     }
 
-    const ownerId = req.body.ownerId;
+    const ownerId = req.user._id;
     const file = await fileService.uploadFile(req.file, ownerId);
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "File uploaded Successfully",
       file
@@ -20,7 +20,7 @@ const uploadFile = async (req, res) => {
   }
 
   catch(error) {
-    res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       message: error.message
     });
@@ -29,17 +29,17 @@ const uploadFile = async (req, res) => {
 
 const getFiles = async (req, res) => {
   try {
-    const ownerId = req.user ? req.user._id : req.query.ownerId;
+    const ownerId = req.user._id;
     const files = await fileService.getFiles(ownerId);
 
-    res.status(200).json({
+    return res.status(200).json({
       sucess: true,
       files
     })
   }
 
   catch(error) {
-    res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       message: error.message,
     });
@@ -49,8 +49,9 @@ const getFiles = async (req, res) => {
 const getFile = async (req, res) => {
   try {
     const { id } = req.params;
+    const ownerId = req.user._id;
 
-    const file = await fileService.getFile(id);
+    const file = await fileService.getFile(id, ownerId);
 
     if (!file) {
       return res.status(404).json({
@@ -59,14 +60,14 @@ const getFile = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       file
-    })
+    });
   }
 
   catch(error) {
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
       message: error.message,
     });
@@ -76,13 +77,14 @@ const getFile = async (req, res) => {
 const downloadFile = async (req, res) => {
   try {
     const { id } = req.params;
+    const ownerId = req.user._id;
 
-    const result = await fileService.downloadFile(id); 
+    const result = await fileService.downloadFile(id, ownerId); 
 
     if(!result) {
       return res.status(404).json({
         success: false,
-        message: "File not found"
+        message: "File not found",
       });
     }
 
@@ -92,11 +94,11 @@ const downloadFile = async (req, res) => {
     res.setHeader("Content-Type", file.mimeType);
     res.setHeader("Content-Length", buffer.length);
 
-    res.status(200).send(buffer);
+    return res.status(200).send(buffer);
   }
 
   catch(error) {
-    res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       message: error.message,
     });
@@ -106,8 +108,9 @@ const downloadFile = async (req, res) => {
 const deleteFile = async (req, res) => {
   try {
     const { id } = req.params;
+    const ownerId = req.user._id;
 
-    const file = await fileService.deleteFile(id);
+    const file = await fileService.deleteFile(id, ownerId);
 
     if(!file) {
       return res.status(404).json({
@@ -116,14 +119,14 @@ const deleteFile = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "File deleted Successfully"
     });
   }
 
   catch(error) {
-    res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       message: error.message,
     });
