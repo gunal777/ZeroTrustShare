@@ -11,22 +11,26 @@ const fileSchema = new mongoose.Schema(
     storedName: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
+      trim: true,
     },
 
     mimeType: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
     },
 
     size: {
       type: Number,
-      required: true
+      required: true,
+      min: 0,
     },
 
     storagePath: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
     },
 
     encryptionStatus: {
@@ -37,11 +41,13 @@ const fileSchema = new mongoose.Schema(
 
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
+      ref: "User",
+      required: true,
+      index: true,
     }
   }, 
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 

@@ -12,10 +12,17 @@ const shareLinkSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
     },
     passwordHash: {
       type: String,
-      select: false,
+      default: null,
     },
     expiresAt: {
       type: Date,
@@ -26,9 +33,10 @@ const shareLinkSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+    accessCount: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   {
