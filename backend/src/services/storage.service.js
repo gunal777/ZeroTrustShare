@@ -11,8 +11,11 @@ const getStorageRoot = () => {
     : path.join(backendRoot, "storage", "encrypted");
 };
 
-const isInsideDirectory = (filePath, directory) =>
-  filePath.startsWith(`${directory}${path.sep}`);
+const isInsideDirectory = (filePath, directory) => {
+  const normalizedFile = path.normalize(filePath);
+  const normalizedDir = path.normalize(directory);
+  return normalizedFile.startsWith(`${normalizedDir}${path.sep}`) || normalizedFile === normalizedDir;
+};
 
 const resolveStoredPath = (storagePath) => {
   if (!storagePath || typeof storagePath !== "string") {

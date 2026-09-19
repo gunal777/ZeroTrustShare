@@ -20,7 +20,11 @@ const getEncryptionKey = () => {
   return key;
 };
 
-const encryptFile = (plainBuffer) => encrypt(plainBuffer, getEncryptionKey());
+const encryptFile = (plainBuffer) => {
+  const result = encrypt(plainBuffer, getEncryptionKey());
+  // Handle both Buffer returns or object returns ({ encryptedBuffer, ... })
+  return Buffer.isBuffer(result) ? result : result.encryptedBuffer;
+};
 
 const decryptFile = (encryptedBuffer) =>
   decrypt(encryptedBuffer, getEncryptionKey());

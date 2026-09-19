@@ -5,17 +5,22 @@ const generateShareId = require("../utils/generateShareId");
 
 const DEFAULT_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
-const createServiceError = (message, code) => {
+const createServiceError = (message, code, statusCode = 400) => {
   const error = new Error(message);
   error.code = code;
+  error.statusCode = statusCode;
   return error;
 };
 
 const createShareLink = async ({ fileId, password, expiresAt, ownerId }) => {
-  const fileExists = await File.exists({ _id: fileId });
+  if (!ownerId) {
+    throw createServiceError("Owner authentication is required.", "UNAUTHORIZED", 401);
+  }
 
-  if (!fileExists) {
-    throw createServiceError("File not found.", "FILE_NOT_FOUND");
+  // Verify file exists AND belongs to the requesting user
+  const file = await File.findOne({ _id: fileId, owner: ownerId });
+  if (!file) {
+    throw createServiceError("File not found or access denied.", "FILE_NOT_FOUND", 404);
   }
 
   const expiryDate = expiresAt
@@ -33,14 +38,17 @@ const createShareLink = async ({ fileId, password, expiresAt, ownerId }) => {
     file: fileId,
     token: generateShareId(),
     expiresAt: expiryDate,
+    createdBy: ownerId, // Matches the createdBy field in ShareLink model
   };
 
   if (password) {
+    if (typeof password !== "string" || password.trim().length < 4) {
+      throw createServiceError(
+        "Share password must be at least 4 characters long.",
+        "INVALID_PASSWORD",
+      );
+    }
     shareData.passwordHash = await bcrypt.hash(password, 12);
-  }
-
-  if (ownerId) {
-    shareData.owner = ownerId;
   }
 
   return ShareLink.create(shareData);
@@ -52,11 +60,11 @@ const accessShareLink = async (token, password) => {
     .populate("file");
 
   if (!shareLink) {
-    throw createServiceError("Share link not found or revoked.", "LINK_NOT_FOUND");
+    throw createServiceError("Share link not found or revoked.", "LINK_NOT_FOUND", 404);
   }
 
   if (shareLink.expiresAt <= new Date()) {
-    throw createServiceError("Share link has expired.", "LINK_EXPIRED");
+    throw createServiceError("Share link has expired.", "LINK_EXPIRED", 410);
   }
 
   if (shareLink.passwordHash) {
@@ -68,19 +76,30 @@ const accessShareLink = async (token, password) => {
       throw createServiceError(
         "A valid share-link password is required.",
         "INVALID_PASSWORD",
+        401,
       );
     }
   }
 
+  // Increment access count
+  shareLink.accessCount = (shareLink.accessCount || 0) + 1;
+  await shareLink.save();
+
   return shareLink;
 };
 
-const revokeShareLink = async (token) =>
-  ShareLink.findOneAndUpdate(
-    { token, isRevoked: false },
+const revokeShareLink = async (token, ownerId) => {
+  const query = { token, isRevoked: false };
+  if (ownerId) {
+    query.createdBy = ownerId;
+  }
+
+  return ShareLink.findOneAndUpdate(
+    query,
     { isRevoked: true },
     { new: true },
   );
+};
 
 module.exports = {
   createShareLink,
