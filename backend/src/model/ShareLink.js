@@ -2,17 +2,16 @@ const mongoose = require("mongoose");
 
 const shareLinkSchema = new mongoose.Schema(
   {
-    file: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "File",
-      required: true,
-      index: true,
-    },
     token: {
       type: String,
       required: true,
       unique: true,
       trim: true,
+    },
+    file: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "File",
+      required: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -28,10 +27,13 @@ const shareLinkSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    allowDownload: {
+      type: Boolean,
+      default: false, // Strict preview-only by default
+    },
     isRevoked: {
       type: Boolean,
       default: false,
-      index: true,
     },
     accessCount: {
       type: Number,
@@ -41,16 +43,7 @@ const shareLinkSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: {
-      transform: (document, returnedObject) => {
-        delete returnedObject.passwordHash;
-        delete returnedObject.__v;
-        return returnedObject;
-      },
-    },
-  },
+  }
 );
 
-const ShareLink = mongoose.model("ShareLink", shareLinkSchema);
-
-module.exports = ShareLink;
+module.exports = mongoose.model("ShareLink", shareLinkSchema);

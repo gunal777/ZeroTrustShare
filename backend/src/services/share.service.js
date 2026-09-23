@@ -12,12 +12,11 @@ const createServiceError = (message, code, statusCode = 400) => {
   return error;
 };
 
-const createShareLink = async ({ fileId, password, expiresAt, ownerId }) => {
+const createShareLink = async ({ fileId, password, expiresAt, ownerId, allowDownload = false }) => {
   if (!ownerId) {
     throw createServiceError("Owner authentication is required.", "UNAUTHORIZED", 401);
   }
 
-  // Verify file exists AND belongs to the requesting user
   const file = await File.findOne({ _id: fileId, owner: ownerId });
   if (!file) {
     throw createServiceError("File not found or access denied.", "FILE_NOT_FOUND", 404);
@@ -31,6 +30,7 @@ const createShareLink = async ({ fileId, password, expiresAt, ownerId }) => {
     throw createServiceError(
       "Share-link expiry must be a valid future date.",
       "INVALID_EXPIRY",
+      400
     );
   }
 
@@ -38,7 +38,8 @@ const createShareLink = async ({ fileId, password, expiresAt, ownerId }) => {
     file: fileId,
     token: generateShareId(),
     expiresAt: expiryDate,
-    createdBy: ownerId, // Matches the createdBy field in ShareLink model
+    createdBy: ownerId,
+    allowDownload: Boolean(allowDownload),
   };
 
   if (password) {
@@ -46,6 +47,7 @@ const createShareLink = async ({ fileId, password, expiresAt, ownerId }) => {
       throw createServiceError(
         "Share password must be at least 4 characters long.",
         "INVALID_PASSWORD",
+        400
       );
     }
     shareData.passwordHash = await bcrypt.hash(password, 12);
