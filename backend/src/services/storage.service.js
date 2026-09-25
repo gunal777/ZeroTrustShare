@@ -32,7 +32,7 @@ const resolveStoredPath = (storagePath) => {
 
   if (!isInsideDirectory(resolvedPath, storageRoot)) {
     throw new Error(
-      "The storage path is outside the encrypted storage directory.",
+      "The storage path is outside the encrypted storage directory."
     );
   }
 

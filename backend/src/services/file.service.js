@@ -17,7 +17,7 @@ const uploadFile = async (fileData, ownerId) => {
   if (!fileData || !Buffer.isBuffer(fileData.buffer)) {
     throw createServiceError(
       "A file buffer is required for upload.",
-      "INVALID_FILE",
+      "INVALID_FILE"
     );
   }
 
@@ -29,7 +29,7 @@ const uploadFile = async (fileData, ownerId) => {
   const encryptedBuffer = encryptionService.encryptFile(fileData.buffer);
   const storagePath = await storageService.storeFile(
     encryptedBuffer,
-    storedName,
+    storedName
   );
 
   try {
@@ -64,7 +64,7 @@ const getFile = async (fileId, ownerId) => {
     throw createServiceError(
       "Owner authentication is required.",
       "UNAUTHORIZED",
-      401,
+      401
     );
   const query = { _id: fileId };
   if (ownerId) query.owner = ownerId;
@@ -93,7 +93,7 @@ const deleteFile = async (fileId, ownerId) => {
     throw createServiceError(
       "Owner authentication is required.",
       "UNAUTHORIZED",
-      401,
+      401
     );
   const query = { _id: fileId };
   if (ownerId) query.owner = ownerId;
