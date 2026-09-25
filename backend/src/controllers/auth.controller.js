@@ -1,64 +1,24 @@
-const authService = require("../services/auth.service");
-
-//login user
-const login = async (req, res) => {
-try {
-    const { email, password } = req.body;
-    const result = await authService.loginUser({ email, password });
-
-    return res.status(200).json({
-      success: true,
-      message: "Login successful",
-      ...result,
-    });
-  } 
-  
-  catch (error) {
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+const service = require("../services/auth.service");
+const User = require("../model/User");
+const {
+  COOKIE_NAME,
+  SESSION_SECONDS,
+  cookieOptions,
+} = require("../config/session");
+const authenticate = (method, status) => async (req, res) => {
+  const { user, token } = await service[method](req.body || {});
+  res.cookie(COOKIE_NAME, token, {
+    ...cookieOptions(),
+    maxAge: SESSION_SECONDS * 1000,
+  });
+  res.status(status).json({ success: true, user });
 };
-
-//sign up user
-const register = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const result = await authService.registerUser({ email, password });
-
-    return res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      ...result,
-    });
-  } 
-  
-  catch (error) {
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-}
-
-//get profile
-const getProfile = async (req, res, next) => {
-  try {
-    const user = await authService.getUserProfile(req.user._id);
-
-    return res.status(200).json({
-      success: true,
-      user,
-    });
-  } 
-  
-  catch (error) {
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+exports.login = authenticate("loginUser", 200);
+exports.register = authenticate("registerUser", 201);
+exports.getProfile = (req, res) =>
+  res.json({ success: true, user: service.publicUser(req.user) });
+exports.logout = async (req, res) => {
+  await User.updateOne({ _id: req.user._id }, { $inc: { tokenVersion: 1 } });
+  res.clearCookie(COOKIE_NAME, cookieOptions());
+  res.json({ success: true });
 };
-
-module.exports = { login, register, getProfile };

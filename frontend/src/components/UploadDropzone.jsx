@@ -1,85 +1,104 @@
-import { useCallback, useRef, useState } from "react";
-
-const ACCEPTED_EXTENSIONS = [".pdf", ".doc", ".docx", ".txt"];
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
-
-function validate(file) {
-  const ext = "." + file.name.split(".").pop().toLowerCase();
-  if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-    return "Only PDF, DOC, DOCX, and TXT files are allowed.";
+import { useRef, useState } from "react";
+import Icon from "./Icon";
+const ACCEPTED = ["pdf", "doc", "docx", "txt"];
+export default function UploadDropzone({
+  onFileAccepted,
+  onValidationError,
+  disabled = false,
+  progress,
+}) {
+  const input = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  function accept(list) {
+    if (disabled) return;
+    if (list?.length > 1)
+      return onValidationError?.("Please upload one file at a time.");
+    const file = list?.[0];
+    if (!file) return;
+    if (!ACCEPTED.includes(file.name.split(".").pop().toLowerCase()))
+      return onValidationError?.("Choose a PDF, DOC, DOCX, or TXT file.");
+    if (file.size > 25 * 1024 * 1024)
+      return onValidationError?.("Files must be 25 MB or smaller.");
+    onFileAccepted(file);
   }
-  if (file.size > MAX_FILE_SIZE) {
-    return "File size exceeds the allowed limit (max 25 MB).";
-  }
-  return null;
-}
-
-export default function UploadDropzone({ onFileAccepted, onValidationError }) {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const inputRef = useRef(null);
-
-  const handleFiles = useCallback(
-    (fileList) => {
-      const file = fileList?.[0];
-      if (!file) return;
-
-      const error = validate(file);
-      if (error) {
-        onValidationError?.(error);
-        return;
-      }
-      onFileAccepted(file);
-    },
-    [onFileAccepted, onValidationError],
-  );
-
   return (
     <div
-      className={`dropzone${isDragOver ? " dropzone--active" : ""}`}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsDragOver(true);
-      }}
-      onDragLeave={() => setIsDragOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setIsDragOver(false);
-        handleFiles(e.dataTransfer.files);
-      }}
-      onClick={() => inputRef.current?.click()}
+      className={
+        "dropzone" +
+        (dragging ? " dropzone--active" : "") +
+        (disabled ? " dropzone--busy" : "")
+      }
       role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+      tabIndex={disabled ? -1 : 0}
+      aria-label="Choose a file to upload"
+      aria-disabled={disabled}
+      onClick={() => {
+        if (!disabled) input.current?.click();
+      }}
+      onKeyDown={(event) => {
+        if (["Enter", " "].includes(event.key)) {
+          event.preventDefault();
+          if (!disabled) input.current?.click();
+        }
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        if (!disabled) setDragging(true);
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          setDragging(false);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        setDragging(false);
+        accept(event.dataTransfer.files);
       }}
     >
       <input
-        ref={inputRef}
+        ref={input}
         type="file"
-        accept={ACCEPTED_EXTENSIONS.join(",")}
+        accept=".pdf,.doc,.docx,.txt"
         hidden
-        onChange={(e) => handleFiles(e.target.files)}
+        disabled={disabled}
+        onChange={(event) => {
+          accept(event.target.files);
+          event.target.value = "";
+        }}
       />
-      <div className="dropzone__icon" aria-hidden="true">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 16V4M12 4L7 9M12 4l5 5"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+      <span className="dropzone-icon">
+        <Icon name="upload" size={25} />
+      </span>
+      <div>
+        <h3>
+          {progress
+            ? progress.percent === 100
+              ? "Encrypting & saving your file…"
+              : "Uploading your file…"
+            : "Drop your file here, or browse"}
+        </h3>
+        <p>
+          {progress
+            ? progress.name
+            : "PDF, DOC, DOCX, or TXT · Up to 25 MB per file"}
+        </p>
       </div>
-      <p className="dropzone__title">Drop a file to encrypt and store it</p>
-      <p className="dropzone__hint">PDF, DOC, DOCX, or TXT &middot; up to 25 MB</p>
+      <span className="dropzone-badge">
+        <Icon name="shield" size={16} />
+        Private by default
+      </span>
+      {progress && (
+        <div
+          className="upload-progress"
+          role="progressbar"
+          aria-label="Upload progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress.percent}
+        >
+          <span style={{ width: progress.percent + "%" }} />
+        </div>
+      )}
     </div>
   );
 }

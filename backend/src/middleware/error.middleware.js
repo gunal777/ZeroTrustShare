@@ -1,50 +1,35 @@
-const errorHandler = (err, req, res, next) => {
-  console.error("Error caught by global handler:", err);
-
-  // 1. Multer built-in file size limit error
+module.exports = (err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  let status = err.statusCode || err.status || 500;
+  let message = err.message;
   if (err.code === "LIMIT_FILE_SIZE") {
-    return res.status(413).json({
-      success: false,
-      message: "File size exceeds the allowed limit (max 25 MB).",
-    });
+    status = 413;
+    message = "Files must be 25 MB or smaller.";
+  } else if (err.name === "MulterError" || err.code === "INVALID_FILE_TYPE")
+    status = 400;
+  else if (err.name === "CastError" || err.name === "ValidationError") {
+    status = 400;
+    message = "Please check the supplied values.";
+  } else if (err.code === 11000) {
+    status = 409;
+    message = "An account with this email already exists.";
+  } else if (err.type === "entity.parse.failed") {
+    status = 400;
+    message = "Invalid JSON body.";
   }
-
-  // 2. Custom file filter rejection from upload.middleware.js
-  if (err.code === "INVALID_FILE_TYPE") {
-    return res.status(400).json({
-      success: false,
-      message: err.message || "Invalid file type.",
-    });
+  if (status >= 500) {
+    console.error(
+      "Request failed: " +
+        (err.name || "Error") +
+        " (" +
+        (err.code || "INTERNAL_ERROR") +
+        ")",
+    );
+    message = "Something went wrong. Please try again.";
   }
-
-  // 3. Custom application/service errors (like in your share.service.js)
-  if (err.code === "FILE_NOT_FOUND" || err.code === "LINK_NOT_FOUND") {
-    return res.status(404).json({
-      success: false,
-      message: err.message,
-    });
-  }
-
-  if (err.code === "LINK_EXPIRED") {
-    return res.status(410).json({
-      success: false,
-      message: err.message,
-    });
-  }
-
-  if (err.code === "INVALID_PASSWORD") {
-    return res.status(401).json({
-      success: false,
-      message: err.message,
-    });
-  }
-
-  // 4. Generic fallback for all other 500 errors
-  const statusCode = err.statusCode || res.statusCode === 200 ? 500 : res.statusCode;
-  res.status(statusCode).json({
+  res.status(status).json({
     success: false,
-    message: err.message || "Internal Server Error",
+    message,
+    code: typeof err.code === "string" ? err.code : undefined,
   });
 };
-
-module.exports = errorHandler;

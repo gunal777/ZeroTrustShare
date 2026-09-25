@@ -14,7 +14,10 @@ const getStorageRoot = () => {
 const isInsideDirectory = (filePath, directory) => {
   const normalizedFile = path.normalize(filePath);
   const normalizedDir = path.normalize(directory);
-  return normalizedFile.startsWith(`${normalizedDir}${path.sep}`) || normalizedFile === normalizedDir;
+  return (
+    normalizedFile.startsWith(`${normalizedDir}${path.sep}`) ||
+    normalizedFile === normalizedDir
+  );
 };
 
 const resolveStoredPath = (storagePath) => {
@@ -28,7 +31,9 @@ const resolveStoredPath = (storagePath) => {
     : path.resolve(backendRoot, storagePath);
 
   if (!isInsideDirectory(resolvedPath, storageRoot)) {
-    throw new Error("The storage path is outside the encrypted storage directory.");
+    throw new Error(
+      "The storage path is outside the encrypted storage directory.",
+    );
   }
 
   return resolvedPath;

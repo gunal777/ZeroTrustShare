@@ -27,13 +27,17 @@ export default function CipherReveal({ text, className, as: Tag = "span" }) {
 
     const step = () => {
       frame.current += 1;
-      const revealCount = Math.floor((frame.current / totalFrames) * text.length);
+      const revealCount = Math.floor(
+        (frame.current / totalFrames) * text.length,
+      );
 
       const next = text
         .split("")
         .map((ch, i) => {
           if (i < revealCount || ch === " " || ch === ".") return ch;
-          return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+          return SCRAMBLE_CHARS[
+            Math.floor(Math.random() * SCRAMBLE_CHARS.length)
+          ];
         })
         .join("");
 

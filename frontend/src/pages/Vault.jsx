@@ -1,160 +1,142 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import UploadDropzone from "../components/UploadDropzone";
+import { useMemo, useState } from "react";
+import { useVault } from "../context/vault";
+import Icon from "../components/Icon";
 import FileRow from "../components/FileRow";
-import ShareModal from "../components/ShareModal";
-import { useToast } from "../components/ToastProvider";
-import {
-  deleteFile,
-  downloadFile,
-  listFiles,
-  triggerBlobDownload,
-  uploadFile,
-} from "../api/client";
-
+import { Empty, ErrorState, Loading } from "../components/State";
+import UploadDropzone from "../components/UploadDropzone";
+import { useToast } from "../components/toast";
+import { uploadFile } from "../api/client";
 export default function Vault() {
+  const { files, setFiles, loading, error, refresh } = useVault();
   const notify = useToast();
-  const navigate = useNavigate();
-  const [files, setFiles] = useState([]);
-  const [status, setStatus] = useState("loading"); // loading | ready | error
-  const [uploadProgress, setUploadProgress] = useState(null); // { name, percent } | null
-  const [shareTarget, setShareTarget] = useState(null);
-  const [tokenInput, setTokenInput] = useState("");
-
-  const refresh = async () => {
+  const [query, setQuery] = useState("");
+  const [type, setType] = useState("all");
+  const [sort, setSort] = useState("newest");
+  const [progress, setProgress] = useState(null);
+  const filtered = useMemo(
+    () =>
+      files
+        .filter(
+          (file) =>
+            file.originalName.toLowerCase().includes(query.toLowerCase()) &&
+            (type === "all" ||
+              file.originalName.toLowerCase().endsWith("." + type)),
+        )
+        .sort((a, b) =>
+          sort === "name"
+            ? a.originalName.localeCompare(b.originalName)
+            : sort === "size"
+              ? b.size - a.size
+              : new Date(b.createdAt) - new Date(a.createdAt),
+        ),
+    [files, query, type, sort],
+  );
+  async function upload(file) {
+    if (progress) return;
+    setProgress({ name: file.name, percent: 0 });
     try {
-      const data = await listFiles();
-      setFiles(data);
-      setStatus("ready");
-    } catch (err) {
-      setStatus("error");
-      notify(err.message || "Couldn't load your files.", { variant: "danger" });
-    }
-  };
-
-  useEffect(() => {
-    refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleUpload = async (file) => {
-    setUploadProgress({ name: file.name, percent: 0 });
-    try {
-      const uploaded = await uploadFile(file, (percent) =>
-        setUploadProgress({ name: file.name, percent }),
+      const result = await uploadFile(file, (percent) =>
+        setProgress({ name: file.name, percent }),
       );
-      setFiles((current) => [uploaded, ...current]);
-      notify(`${file.name} encrypted and stored.`, { variant: "success" });
+      setFiles((current) => [result, ...current]);
+      notify("File encrypted and added to your vault.", { variant: "success" });
     } catch (err) {
-      notify(err.message || "Upload failed.", { variant: "danger" });
+      notify(err.message, { variant: "danger" });
     } finally {
-      setUploadProgress(null);
+      setProgress(null);
     }
-  };
-
-  const handleDownload = async (file) => {
-    try {
-      const { blob, filename } = await downloadFile(file._id);
-      triggerBlobDownload(blob, filename || file.originalName);
-    } catch (err) {
-      notify(err.message || "Download failed.", { variant: "danger" });
-    }
-  };
-
-  const handleDelete = async (file) => {
-    if (!window.confirm(`Delete "${file.originalName}"? This can't be undone.`)) return;
-    try {
-      await deleteFile(file._id);
-      setFiles((current) => current.filter((f) => f._id !== file._id));
-      notify("File deleted.", { variant: "success" });
-    } catch (err) {
-      notify(err.message || "Couldn't delete the file.", { variant: "danger" });
-    }
-  };
-
+  }
   return (
-    <div className="page">
-      <header className="topbar">
-        <div className="topbar__brand">
-          <span className="topbar__mark" aria-hidden="true">
-            ⌁
-          </span>
-          <div>
-            <h1>ZeroTrust Vault</h1>
-            <p className="topbar__tagline">Every file encrypted at rest. Links you control.</p>
+    <>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">A HOME FOR YOUR IMPORTANT FILES</span>
+          <h1>
+            My files<span className="heading-period">.</span>
+          </h1>
+          <p>Keep them close. Share them thoughtfully.</p>
+        </div>
+        <span className="badge badge--success">
+          <Icon name="lock" size={13} />
+          Encrypted at rest
+        </span>
+      </div>
+      <UploadDropzone
+        onFileAccepted={upload}
+        onValidationError={(message) => notify(message, { variant: "danger" })}
+        disabled={Boolean(progress)}
+        progress={progress}
+      />
+      {error && <ErrorState message={error} onRetry={refresh} />}
+      <section className="panel files-panel">
+        <div className="file-toolbar">
+          <div className="search-input">
+            <Icon name="search" size={18} />
+            <input
+              type="search"
+              placeholder="Search your files…"
+              aria-label="Search files"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </div>
+          <div className="toolbar-filters">
+            <select
+              className="text-input"
+              aria-label="File type"
+              value={type}
+              onChange={(event) => setType(event.target.value)}
+            >
+              <option value="all">All file types</option>
+              <option value="pdf">PDF</option>
+              <option value="doc">DOC</option>
+              <option value="docx">DOCX</option>
+              <option value="txt">TXT</option>
+            </select>
+            <select
+              className="text-input"
+              aria-label="Sort files"
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+            >
+              <option value="newest">Newest first</option>
+              <option value="name">Name A–Z</option>
+              <option value="size">Largest first</option>
+            </select>
           </div>
         </div>
-
-        <nav className="topbar__nav" aria-label="Open a share link">
-          <input
-            type="text"
-            className="text-input topbar__nav-input"
-            placeholder="Paste a share link or token"
-            value={tokenInput}
-            onChange={(e) => setTokenInput(e.target.value)}
+        <div className="list-caption">
+          <span>FILE NAME</span>
+          <span>
+            {filtered.length} {filtered.length === 1 ? "FILE" : "FILES"}
+          </span>
+        </div>
+        {loading ? (
+          <Loading />
+        ) : filtered.length ? (
+          <div role="list">
+            {filtered.map((file) => (
+              <FileRow key={file._id} file={file} />
+            ))}
+          </div>
+        ) : (
+          <Empty
+            icon={files.length ? "search" : "folder"}
+            title={
+              files.length ? "No files found." : "Room for your first file."
+            }
+            message={
+              files.length
+                ? "Try a different name or file type."
+                : "Drag a document into the upload area above to get started."
+            }
           />
-          <button
-            className="btn btn--small"
-            onClick={() => {
-              const token = tokenInput.trim().split("/share/").pop();
-              if (token) navigate(`/share/${token}`);
-            }}
-          >
-            Open
-          </button>
-        </nav>
-      </header>
-
-      <section aria-label="Upload a file">
-        <UploadDropzone
-          onFileAccepted={handleUpload}
-          onValidationError={(msg) => notify(msg, { variant: "danger" })}
-        />
-        {uploadProgress && (
-          <div className="upload-progress" aria-live="polite">
-            <div className="upload-progress__label mono">
-              <span>Encrypting {uploadProgress.name}</span>
-              <span>{uploadProgress.percent}%</span>
-            </div>
-            <div className="progress-track">
-              <div className="progress-track__fill" style={{ width: `${uploadProgress.percent}%` }} />
-            </div>
-          </div>
         )}
       </section>
-
-      <section className="vault-list" aria-label="Your files">
-        {status === "loading" && <p className="empty-state">Loading your vault…</p>}
-
-        {status === "error" && (
-          <div className="empty-state empty-state--error">
-            <p>Couldn't reach the vault. Is the backend running?</p>
-            <button className="btn" onClick={refresh}>
-              Try again
-            </button>
-          </div>
-        )}
-
-        {status === "ready" && files.length === 0 && (
-          <div className="empty-state">
-            <p>Your vault is empty.</p>
-            <p className="empty-state__hint">Drop a file above to encrypt and store your first one.</p>
-          </div>
-        )}
-
-        {status === "ready" &&
-          files.map((file) => (
-            <FileRow
-              key={file._id}
-              file={file}
-              onDownload={handleDownload}
-              onShare={setShareTarget}
-              onDelete={handleDelete}
-            />
-          ))}
-      </section>
-
-      {shareTarget && <ShareModal file={shareTarget} onClose={() => setShareTarget(null)} />}
-    </div>
+      <p className="section-footnote">
+        <Icon name="lock" size={14} />
+        Only you can see these files unless you create a share link.
+      </p>
+    </>
   );
 }

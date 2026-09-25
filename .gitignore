@@ -2,6 +2,16 @@
 # 🚀 Global System & IDE Overrides
 # ==========================================
 .DS_Store
+*.log
+production.env
+.local-jwt-secret
+backend/storage/
+backend/.test-storage/
+test-results/
+playwright-report/
+frontend/test-results/
+frontend/playwright-report/
+.artifacts/
 Thumbs.db
 .vscode/
 .idea/

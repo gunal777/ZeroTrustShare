@@ -1,12 +1,12 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const fileSchema = new mongoose.Schema(
   {
     originalName: {
       type: String,
       required: true,
-      trim: true
-      },
+      trim: true,
+    },
 
     storedName: {
       type: String,
@@ -36,7 +36,7 @@ const fileSchema = new mongoose.Schema(
     encryptionStatus: {
       type: String,
       enum: ["encrypted", "unencrypted"],
-      default: "encrypted"
+      default: "encrypted",
     },
 
     owner: {
@@ -44,11 +44,11 @@ const fileSchema = new mongoose.Schema(
       ref: "User",
       required: true,
       index: true,
-    }
-  }, 
+    },
+  },
   {
     timestamps: true,
-  }
+  },
 );
 
 const File = mongoose.model("File", fileSchema);

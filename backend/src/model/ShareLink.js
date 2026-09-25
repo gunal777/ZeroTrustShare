@@ -22,6 +22,7 @@ const shareLinkSchema = new mongoose.Schema(
     passwordHash: {
       type: String,
       default: null,
+      select: false,
     },
     expiresAt: {
       type: Date,
@@ -43,7 +44,7 @@ const shareLinkSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 module.exports = mongoose.model("ShareLink", shareLinkSchema);

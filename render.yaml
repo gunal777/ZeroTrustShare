@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: zerotrust-vault
+    runtime: node
+    plan: 0.5c-512mb
+    buildCommand: npm ci --include=dev --prefix frontend && npm run build --prefix frontend && npm ci --omit=dev --prefix backend
+    startCommand: npm start --prefix backend
+    healthCheckPath: /api/health
+    disk:
+      name: encrypted-files
+      mountPath: /var/data
+      sizeGB: 10
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22.23.1
+      - key: PORT
+        value: 5000
+      - key: TRUST_PROXY
+        value: 1
+      - key: ENCRYPTED_STORAGE_PATH
+        value: /var/data
+      - key: MONGO_URI
+        sync: false
+      - key: APP_ORIGIN
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

@@ -15,7 +15,10 @@ const createServiceError = (message, code, statusCode = 400) => {
 
 const uploadFile = async (fileData, ownerId) => {
   if (!fileData || !Buffer.isBuffer(fileData.buffer)) {
-    throw createServiceError("A file buffer is required for upload.", "INVALID_FILE");
+    throw createServiceError(
+      "A file buffer is required for upload.",
+      "INVALID_FILE",
+    );
   }
 
   if (!ownerId) {
@@ -57,6 +60,12 @@ const getFiles = async (ownerId) => {
 };
 
 const getFile = async (fileId, ownerId) => {
+  if (!ownerId)
+    throw createServiceError(
+      "Owner authentication is required.",
+      "UNAUTHORIZED",
+      401,
+    );
   const query = { _id: fileId };
   if (ownerId) query.owner = ownerId;
   return File.findOne(query).select(FILE_PUBLIC_FIELDS);
@@ -80,6 +89,12 @@ const downloadFile = async (fileId, ownerId) => {
 };
 
 const deleteFile = async (fileId, ownerId) => {
+  if (!ownerId)
+    throw createServiceError(
+      "Owner authentication is required.",
+      "UNAUTHORIZED",
+      401,
+    );
   const query = { _id: fileId };
   if (ownerId) query.owner = ownerId;
 

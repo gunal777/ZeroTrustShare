@@ -1,142 +1,33 @@
-const fileService = require("../services/file.service");
-
-const uploadFile = async (req, res) => {
-  try {
-    if(!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded"
-      });
-    }
-
-    const ownerId = req.user._id;
-    const file = await fileService.uploadFile(req.file, ownerId);
-
-    return res.status(201).json({
-      success: true,
-      message: "File uploaded Successfully",
-      file
-    })
-  }
-
-  catch(error) {
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message
-    });
-  }
+const service = require("../services/file.service");
+exports.uploadFile = async (req, res) => {
+  if (!req.file)
+    return res
+      .status(400)
+      .json({ success: false, message: "Choose a file to upload." });
+  const record = await service.uploadFile(req.file, req.user._id);
+  const file = await service.getFile(record._id, req.user._id);
+  res.status(201).json({ success: true, file });
 };
-
-const getFiles = async (req, res) => {
-  try {
-    const ownerId = req.user._id;
-    const files = await fileService.getFiles(ownerId);
-
-    return res.status(200).json({
-      sucess: true,
-      files
-    })
-  }
-
-  catch(error) {
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+exports.getFiles = async (req, res) =>
+  res.json({ success: true, files: await service.getFiles(req.user._id) });
+exports.getFile = async (req, res) => {
+  const file = await service.getFile(req.params.id, req.user._id);
+  if (!file)
+    return res.status(404).json({ success: false, message: "File not found." });
+  res.json({ success: true, file });
 };
-
-const getFile = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const ownerId = req.user._id;
-
-    const file = await fileService.getFile(id, ownerId);
-
-    if (!file) {
-      return res.status(404).json({
-        success: false,
-        message: "File not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      file
-    });
-  }
-
-  catch(error) {
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+exports.downloadFile = async (req, res) => {
+  const result = await service.downloadFile(req.params.id, req.user._id);
+  if (!result)
+    return res.status(404).json({ success: false, message: "File not found." });
+  res
+    .attachment(result.file.originalName)
+    .type(result.file.mimeType)
+    .send(result.buffer);
 };
-
-const downloadFile = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const ownerId = req.user._id;
-
-    const result = await fileService.downloadFile(id, ownerId); 
-
-    if(!result) {
-      return res.status(404).json({
-        success: false,
-        message: "File not found",
-      });
-    }
-
-    const { file, buffer } = result;
-
-    res.setHeader("Content-Disposition", `attachment; filename="${file.originalName}"`);
-    res.setHeader("Content-Type", file.mimeType);
-    res.setHeader("Content-Length", buffer.length);
-
-    return res.status(200).send(buffer);
-  }
-
-  catch(error) {
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-const deleteFile = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const ownerId = req.user._id;
-
-    const file = await fileService.deleteFile(id, ownerId);
-
-    if(!file) {
-      return res.status(404).json({
-        success: false,
-        message: "File not found"
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "File deleted Successfully"
-    });
-  }
-
-  catch(error) {
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-module.exports = {
-  uploadFile,
-  getFiles,
-  getFile,
-  downloadFile,
-  deleteFile,
+exports.deleteFile = async (req, res) => {
+  const file = await service.deleteFile(req.params.id, req.user._id);
+  if (!file)
+    return res.status(404).json({ success: false, message: "File not found." });
+  res.json({ success: true, message: "File deleted." });
 };

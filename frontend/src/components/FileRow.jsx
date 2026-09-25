@@ -1,68 +1,74 @@
 import { useState } from "react";
-import CipherReveal from "./CipherReveal";
+import { downloadFile, triggerBlobDownload } from "../api/client";
 import { extFromName, formatBytes, formatDate } from "../utils/format";
-
-function FileIcon({ ext }) {
-  return (
-    <div className="file-icon" aria-hidden="true">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M6 2h9l5 5v13a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z"
-          stroke="currentColor"
-          strokeWidth="1.4"
-          strokeLinejoin="round"
-        />
-        <path d="M15 2v5h5" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-      </svg>
-      <span className="file-icon__ext">{ext}</span>
-    </div>
-  );
-}
-
-export default function FileRow({ file, onDownload, onShare, onDelete }) {
-  const [isBusy, setIsBusy] = useState(null); // 'download' | 'delete' | null
-
-  const run = async (kind, action) => {
-    setIsBusy(kind);
+import { useVault } from "../context/vault";
+import { useToast } from "./toast";
+import Icon from "./Icon";
+export default function FileRow({ file }) {
+  const { setShareTarget, setDeleteTarget } = useVault();
+  const notify = useToast();
+  const [busy, setBusy] = useState(false);
+  async function download() {
+    setBusy(true);
     try {
-      await action();
+      const data = await downloadFile(file._id);
+      triggerBlobDownload(data.blob, data.filename || file.originalName);
+    } catch (err) {
+      notify(err.message, { variant: "danger" });
     } finally {
-      setIsBusy(null);
+      setBusy(false);
     }
-  };
-
+  }
   return (
-    <div className="file-row">
-      <FileIcon ext={extFromName(file.originalName)} />
-
-      <div className="file-row__main">
-        <CipherReveal as="p" className="file-row__name" text={file.originalName} />
-        <p className="file-row__meta mono">
-          {formatBytes(file.size)} &middot; uploaded {formatDate(file.createdAt)}
-        </p>
-      </div>
-
-      <span className="badge badge--success" title="Files are encrypted at rest">
-        {file.encryptionStatus === "encrypted" ? "Encrypted" : "Unencrypted"}
+    <div className="file-row" role="listitem">
+      <span
+        className={
+          "file-icon file-icon--" + extFromName(file.originalName).toLowerCase()
+        }
+      >
+        <Icon name="file" size={22} />
+        <small>{extFromName(file.originalName)}</small>
       </span>
-
-      <div className="file-row__actions">
+      <div className="file-row-main">
+        <strong title={file.originalName}>{file.originalName}</strong>
+        <span>
+          {formatBytes(file.size)} <span className="footer-dot">·</span>{" "}
+          {formatDate(file.createdAt)}
+        </span>
+      </div>
+      <span className="badge badge--success file-status">
+        <Icon name="lock" size={11} />
+        Encrypted
+      </span>
+      <div className="file-actions">
         <button
-          className="btn btn--small"
-          onClick={() => run("download", () => onDownload(file))}
-          disabled={isBusy === "download"}
+          className="icon-btn"
+          onClick={download}
+          disabled={busy}
+          aria-label={"Download " + file.originalName}
+          title="Download"
         >
-          {isBusy === "download" ? "Downloading…" : "Download"}
-        </button>
-        <button className="btn btn--small" onClick={() => onShare(file)}>
-          Share
+          {busy ? (
+            <span className="spinner spinner--small" />
+          ) : (
+            <Icon name="download" size={18} />
+          )}
         </button>
         <button
-          className="btn btn--small btn--danger-ghost"
-          onClick={() => run("delete", () => onDelete(file))}
-          disabled={isBusy === "delete"}
+          className="icon-btn"
+          onClick={() => setShareTarget(file)}
+          aria-label={"Share " + file.originalName}
+          title="Share"
         >
-          {isBusy === "delete" ? "Deleting…" : "Delete"}
+          <Icon name="link" size={18} />
+        </button>
+        <button
+          className="icon-btn icon-btn--danger"
+          onClick={() => setDeleteTarget(file)}
+          aria-label={"Delete " + file.originalName}
+          title="Delete"
+        >
+          <Icon name="trash" size={18} />
         </button>
       </div>
     </div>
