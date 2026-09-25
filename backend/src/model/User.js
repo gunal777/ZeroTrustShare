@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Pre-save hook: Hash password with bcrypt before saving

@@ -48,7 +48,7 @@ const fileSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 const File = mongoose.model("File", fileSchema);
