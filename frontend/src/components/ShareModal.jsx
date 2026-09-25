@@ -6,12 +6,14 @@ import { useToast } from "./toast";
 import Modal from "./Modal";
 import Icon from "./Icon";
 import { formatDate } from "../utils/format";
+
 const EXPIRIES = [
   { label: "1 hour", hours: 1 },
   { label: "24 hours", hours: 24 },
   { label: "7 days", hours: 168 },
   { label: "30 days", hours: 720 },
 ];
+
 export default function ShareModal({ file, onClose }) {
   const { setLinks } = useVault();
   const notify = useToast();
@@ -23,6 +25,7 @@ export default function ShareModal({ file, onClose }) {
   const [error, setError] = useState("");
   const previewable = ["application/pdf", "text/plain"].includes(file.mimeType);
   const url = link ? window.location.origin + "/share/" + link.token : "";
+
   async function create(event) {
     event.preventDefault();
     setBusy(true);
@@ -42,6 +45,7 @@ export default function ShareModal({ file, onClose }) {
       setBusy(false);
     }
   }
+
   async function copy() {
     try {
       await navigator.clipboard.writeText(url);
@@ -50,6 +54,7 @@ export default function ShareModal({ file, onClose }) {
       notify("Select the link and copy it manually.", { variant: "danger" });
     }
   }
+
   return (
     <Modal
       title={link ? "Ready to share." : "Share on your terms."}

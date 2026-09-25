@@ -7,12 +7,14 @@ import { useToast } from "../components/toast";
 import { Empty, ErrorState, Loading } from "../components/State";
 import Modal from "../components/Modal";
 import Icon from "../components/Icon";
+
 const statusOf = (link) =>
   link.isRevoked
     ? "revoked"
     : new Date(link.expiresAt) <= new Date()
       ? "expired"
       : "active";
+
 export default function Links() {
   const { links, setLinks, loading, error, refresh } = useVault();
   const notify = useToast();
@@ -21,21 +23,24 @@ export default function Links() {
   const [target, setTarget] = useState(null);
   const [busy, setBusy] = useState(false);
   const [, setTick] = useState(0);
+
   useEffect(() => {
     const timer = setInterval(() => setTick((tick) => tick + 1), 30000);
     return () => clearInterval(timer);
   }, []);
+
   const filtered = links.filter(
     (link) =>
       (filter === "all" || statusOf(link) === filter) &&
       (link.file?.originalName || "")
         .toLowerCase()
-        .includes(query.toLowerCase()),
+        .includes(query.toLowerCase())
   );
+
   async function copy(link) {
     try {
       await navigator.clipboard.writeText(
-        window.location.origin + "/share/" + link.token,
+        window.location.origin + "/share/" + link.token
       );
       notify("Link copied.", { variant: "success" });
     } catch {
@@ -44,6 +49,7 @@ export default function Links() {
       });
     }
   }
+
   async function revoke() {
     setBusy(true);
     try {
@@ -52,8 +58,8 @@ export default function Links() {
         current.map((link) =>
           link.token === target.token
             ? { ...link, isRevoked: true, updatedAt: new Date().toISOString() }
-            : link,
-        ),
+            : link
+        )
       );
       setTarget(null);
       notify("Access revoked. The link no longer works.", {
@@ -65,6 +71,7 @@ export default function Links() {
       setBusy(false);
     }
   }
+
   return (
     <>
       <div className="page-heading">

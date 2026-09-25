@@ -5,11 +5,13 @@ import { formatBytes, formatDate } from "../utils/format";
 import FileRow from "../components/FileRow";
 import Icon from "../components/Icon";
 import { Empty, ErrorState, Loading } from "../components/State";
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { files, links, loading, error, refresh, setUploadOpen } = useVault();
+
   const active = links.filter(
-    (link) => !link.isRevoked && new Date(link.expiresAt) > new Date(),
+    (link) => !link.isRevoked && new Date(link.expiresAt) > new Date()
   );
   const bytes = files.reduce((sum, file) => sum + file.size, 0);
   const accesses = links.reduce((sum, link) => sum + link.accessCount, 0);
@@ -31,6 +33,7 @@ export default function Dashboard() {
   ]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 4);
+
   return (
     <>
       <div className="page-heading">

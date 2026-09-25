@@ -1,4 +1,5 @@
 import Icon from "./Icon";
+
 export function Loading({ full = false }) {
   return (
     <div
@@ -10,6 +11,7 @@ export function Loading({ full = false }) {
     </div>
   );
 }
+
 export function Empty({ icon = "folder", title, message, action }) {
   return (
     <div className="empty-state">
@@ -22,6 +24,7 @@ export function Empty({ icon = "folder", title, message, action }) {
     </div>
   );
 }
+
 export function ErrorState({ message, onRetry }) {
   return (
     <div className="error-banner" role="alert">

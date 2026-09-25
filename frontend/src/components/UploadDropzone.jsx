@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import Icon from "./Icon";
+
 const ACCEPTED = ["pdf", "doc", "docx", "txt"];
+
 export default function UploadDropzone({
   onFileAccepted,
   onValidationError,
@@ -9,6 +11,7 @@ export default function UploadDropzone({
 }) {
   const input = useRef(null);
   const [dragging, setDragging] = useState(false);
+
   function accept(list) {
     if (disabled) return;
     if (list?.length > 1)
@@ -21,6 +24,7 @@ export default function UploadDropzone({
       return onValidationError?.("Files must be 25 MB or smaller.");
     onFileAccepted(file);
   }
+
   return (
     <div
       className={

@@ -14,6 +14,7 @@ import { useToast } from "./toast";
 import Icon from "./Icon";
 import { ErrorState, Loading } from "./State";
 import VaultDialogs from "./VaultDialogs";
+
 export function Brand({ light = false }) {
   return (
     <Link
@@ -30,6 +31,7 @@ export function Brand({ light = false }) {
     </Link>
   );
 }
+
 function Shell() {
   const { user, signOut } = useAuth();
   const { files, links, setUploadOpen } = useVault();
@@ -47,11 +49,13 @@ function Shell() {
     { dashboard: "Overview", files: "My files", links: "Shared links" }[
       route
     ] || "Workspace";
+
   useEffect(() => {
     document.title = title + " · ZeroTrust";
     mainRef.current?.focus({ preventScroll: true });
     window.scrollTo({ top: 0 });
   }, [location.pathname, title]);
+
   async function handleLogout() {
     setLeaving(true);
     try {
@@ -62,6 +66,7 @@ function Shell() {
       setLeaving(false);
     }
   }
+
   function openLink(event) {
     event.preventDefault();
     const value = token.trim().split("/share/").pop().split(/[?#]/)[0];
@@ -72,6 +77,7 @@ function Shell() {
     navigate("/share/" + value);
     setToken("");
   }
+
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">
@@ -104,7 +110,7 @@ function Shell() {
               {
                 links.filter(
                   (link) =>
-                    !link.isRevoked && new Date(link.expiresAt) > new Date(),
+                    !link.isRevoked && new Date(link.expiresAt) > new Date()
                 ).length
               }
             </span>
@@ -197,6 +203,7 @@ function Shell() {
     </div>
   );
 }
+
 export default function AppLayout() {
   const { user, loading, error, check, signedOut } = useAuth();
   const location = useLocation();

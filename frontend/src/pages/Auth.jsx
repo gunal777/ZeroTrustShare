@@ -4,6 +4,7 @@ import { useAuth } from "../context/auth";
 import { Brand } from "../components/AppLayout";
 import Icon from "../components/Icon";
 import { Loading } from "../components/State";
+
 export default function Auth({ signup = false }) {
   const { user, loading, authenticate } = useAuth();
   const navigate = useNavigate();
@@ -14,14 +15,17 @@ export default function Auth({ signup = false }) {
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
   const destination = ["/dashboard", "/files", "/links"].includes(
-    location.state?.from,
+    location.state?.from
   )
     ? location.state.from
     : "/dashboard";
+
   useEffect(() => {
     document.title = (signup ? "Create account" : "Sign in") + " · ZeroTrust";
   }, [signup]);
+
   async function submit(event) {
     event.preventDefault();
     setBusy(true);
@@ -39,8 +43,10 @@ export default function Auth({ signup = false }) {
       setBusy(false);
     }
   }
+
   if (loading) return <Loading full />;
   if (user) return <Navigate to={destination} replace />;
+
   return (
     <div className="auth-page">
       <section className="auth-story">

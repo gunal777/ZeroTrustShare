@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Brand } from "../components/AppLayout";
 import { Empty } from "../components/State";
+
 export default function NotFound() {
   return (
     <div className="public-page">

@@ -8,10 +8,14 @@ import Vault from "./pages/Vault";
 import Links from "./pages/Links";
 import SharedAccess from "./pages/SharedAccess";
 import NotFound from "./pages/NotFound";
+
 export default function App() {
   return (
     <BrowserRouter
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
     >
       <ToastProvider>
         <AuthProvider>

@@ -4,12 +4,15 @@ import { extFromName, formatBytes, formatDate } from "../utils/format";
 import { useVault } from "../context/vault";
 import { useToast } from "./toast";
 import Icon from "./Icon";
+
 export default function FileRow({ file }) {
   const { setShareTarget, setDeleteTarget } = useVault();
   const notify = useToast();
   const [busy, setBusy] = useState(false);
+
   async function download() {
     setBusy(true);
+
     try {
       const data = await downloadFile(file._id);
       triggerBlobDownload(data.blob, data.filename || file.originalName);
@@ -19,6 +22,7 @@ export default function FileRow({ file }) {
       setBusy(false);
     }
   }
+
   return (
     <div className="file-row" role="listitem">
       <span

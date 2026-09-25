@@ -28,7 +28,7 @@ export default function CipherReveal({ text, className, as: Tag = "span" }) {
     const step = () => {
       frame.current += 1;
       const revealCount = Math.floor(
-        (frame.current / totalFrames) * text.length,
+        (frame.current / totalFrames) * text.length
       );
 
       const next = text

@@ -6,6 +6,7 @@ import { Empty, ErrorState, Loading } from "../components/State";
 import UploadDropzone from "../components/UploadDropzone";
 import { useToast } from "../components/toast";
 import { uploadFile } from "../api/client";
+
 export default function Vault() {
   const { files, setFiles, loading, error, refresh } = useVault();
   const notify = useToast();
@@ -13,6 +14,7 @@ export default function Vault() {
   const [type, setType] = useState("all");
   const [sort, setSort] = useState("newest");
   const [progress, setProgress] = useState(null);
+
   const filtered = useMemo(
     () =>
       files
@@ -20,23 +22,24 @@ export default function Vault() {
           (file) =>
             file.originalName.toLowerCase().includes(query.toLowerCase()) &&
             (type === "all" ||
-              file.originalName.toLowerCase().endsWith("." + type)),
+              file.originalName.toLowerCase().endsWith("." + type))
         )
         .sort((a, b) =>
           sort === "name"
             ? a.originalName.localeCompare(b.originalName)
             : sort === "size"
               ? b.size - a.size
-              : new Date(b.createdAt) - new Date(a.createdAt),
+              : new Date(b.createdAt) - new Date(a.createdAt)
         ),
-    [files, query, type, sort],
+    [files, query, type, sort]
   );
+
   async function upload(file) {
     if (progress) return;
     setProgress({ name: file.name, percent: 0 });
     try {
       const result = await uploadFile(file, (percent) =>
-        setProgress({ name: file.name, percent }),
+        setProgress({ name: file.name, percent })
       );
       setFiles((current) => [result, ...current]);
       notify("File encrypted and added to your vault.", { variant: "success" });
@@ -46,6 +49,7 @@ export default function Vault() {
       setProgress(null);
     }
   }
+
   return (
     <>
       <div className="page-heading">

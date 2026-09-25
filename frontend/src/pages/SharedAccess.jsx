@@ -11,10 +11,12 @@ import { Brand } from "../components/AppLayout";
 import { formatBytes, formatDate, extFromName } from "../utils/format";
 import { Empty, Loading } from "../components/State";
 import Icon from "../components/Icon";
+
 export default function SharedAccess() {
   const { token } = useParams();
   return <SharedFile key={token} token={token} />;
 }
+
 function SharedFile({ token }) {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState("loading");
@@ -24,6 +26,7 @@ function SharedFile({ token }) {
   const [downloaded, setDownloaded] = useState(false);
   const [preview, setPreview] = useState(null);
   const [retry, setRetry] = useState(0);
+
   useEffect(() => {
     let live = true;
     document.title = "Secure file access · ZeroTrust";
@@ -41,7 +44,7 @@ function SharedFile({ token }) {
               ? "gone"
               : err.status === 404
                 ? "missing"
-                : "error",
+                : "error"
           );
           setError(err.message);
         }
@@ -50,6 +53,7 @@ function SharedFile({ token }) {
       live = false;
     };
   }, [token, retry]);
+
   async function access(kind) {
     setBusy(kind);
     setError("");
@@ -61,7 +65,7 @@ function SharedFile({ token }) {
         setPreview(
           data.file.mimeType === "text/plain"
             ? { text: await result.blob.text() }
-            : { blob: result.blob },
+            : { blob: result.blob }
         );
       else {
         triggerBlobDownload(result.blob, result.filename || data.file.name);
@@ -77,6 +81,7 @@ function SharedFile({ token }) {
       setBusy("");
     }
   }
+
   return (
     <div className="public-page">
       <header className="public-header">
@@ -202,7 +207,7 @@ function SharedFile({ token }) {
                 </button>
                 {data.allowDownload &&
                   ["text/plain", "application/pdf"].includes(
-                    data.file.mimeType,
+                    data.file.mimeType
                   ) && (
                     <button
                       className="btn btn--full"

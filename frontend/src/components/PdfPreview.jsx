@@ -39,7 +39,7 @@ export default function PdfPreview({ blob }) {
           setError(
             err.name === "PasswordException"
               ? "This PDF has its own password. Ask the sender for an unlocked copy."
-              : "This PDF could not be rendered. Ask the sender for a new copy.",
+              : "This PDF could not be rendered. Ask the sender for a new copy."
           );
       });
     return () => {
@@ -49,7 +49,7 @@ export default function PdfPreview({ blob }) {
   }, [blob]);
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) =>
-      setWidth(Math.max(100, Math.floor(entry.contentRect.width - 32))),
+      setWidth(Math.max(100, Math.floor(entry.contentRect.width - 32)))
     );
     observer.observe(host.current);
     return () => observer.disconnect();
@@ -87,7 +87,7 @@ export default function PdfPreview({ blob }) {
       .catch((err) => {
         if (active && err.name !== "RenderingCancelledException")
           setError(
-            "This page could not be rendered. Ask the sender for a new copy.",
+            "This page could not be rendered. Ask the sender for a new copy."
           );
       });
     return () => {

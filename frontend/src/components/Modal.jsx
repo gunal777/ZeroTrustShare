@@ -1,16 +1,20 @@
 import { useEffect, useRef } from "react";
 import Icon from "./Icon";
+
 export default function Modal({ title, description, onClose, busy, children }) {
   const ref = useRef(null);
+
   useEffect(() => {
     const dialog = ref.current;
     const previous = document.activeElement;
     dialog.showModal();
+
     return () => {
       dialog.close();
       previous?.focus?.();
     };
   }, []);
+
   return (
     <dialog
       ref={ref}
@@ -23,13 +27,15 @@ export default function Modal({ title, description, onClose, busy, children }) {
       onClick={(event) => {
         if (event.target === event.currentTarget && !busy) {
           const rect = event.currentTarget.getBoundingClientRect();
+
           if (
             event.clientX < rect.left ||
             event.clientX > rect.right ||
             event.clientY < rect.top ||
             event.clientY > rect.bottom
-          )
+          ) {
             onClose();
+          }
         }
       }}
     >

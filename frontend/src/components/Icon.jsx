@@ -24,6 +24,7 @@ const paths = {
   plus: "M12 5v14 M5 12h14",
   alert: "M12 3 2 21h20L12 3Z M12 9v5 M12 17h.01",
 };
+
 export default function Icon({ name, size = 20, className = "" }) {
   return (
     <svg
