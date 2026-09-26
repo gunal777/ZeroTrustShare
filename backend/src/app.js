@@ -57,8 +57,9 @@ app.use("/api", (req, res, next) => {
 
     if (
       (origin && !origins.has(origin)) ||
-      req.get("Sec-Fetch-Site") === "cross-site" ||
-      (!origin && req.headers.cookie && !req.headers.authorization)
+      (!origin &&
+        (req.get("Sec-Fetch-Site") === "cross-site" ||
+          (req.headers.cookie && !req.headers.authorization)))
     ) {
       return res.status(403).json({
         success: false,
