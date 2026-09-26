@@ -1,80 +1,80 @@
-const fs = require("fs/promises");
-const path = require("path");
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} = require("@aws-sdk/client-s3");
 
-const backendRoot = path.resolve(__dirname, "../..");
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
-const getStorageRoot = () => {
-  const configuredPath = process.env.ENCRYPTED_STORAGE_PATH;
-
-  return configuredPath
-    ? path.resolve(backendRoot, configuredPath)
-    : path.join(backendRoot, "storage", "encrypted");
-};
-
-const isInsideDirectory = (filePath, directory) => {
-  const normalizedFile = path.normalize(filePath);
-  const normalizedDir = path.normalize(directory);
-  return (
-    normalizedFile.startsWith(`${normalizedDir}${path.sep}`) ||
-    normalizedFile === normalizedDir
-  );
-};
-
-const resolveStoredPath = (storagePath) => {
-  if (!storagePath || typeof storagePath !== "string") {
-    throw new Error("A storage path is required.");
-  }
-
-  const storageRoot = getStorageRoot();
-  const resolvedPath = path.isAbsolute(storagePath)
-    ? path.resolve(storagePath)
-    : path.resolve(backendRoot, storagePath);
-
-  if (!isInsideDirectory(resolvedPath, storageRoot)) {
-    throw new Error(
-      "The storage path is outside the encrypted storage directory."
-    );
-  }
-
-  return resolvedPath;
-};
+const BUCKET = process.env.AWS_S3_BUCKET_NAME;
 
 const storeFile = async (encryptedBuffer, storedName) => {
   if (!Buffer.isBuffer(encryptedBuffer)) {
     throw new TypeError("Encrypted file content must be a Buffer.");
   }
 
-  if (
-    !storedName ||
-    storedName === "." ||
-    storedName === ".." ||
-    path.basename(storedName) !== storedName
-  ) {
-    throw new Error("A safe stored file name is required.");
+  if (!storedName || typeof storedName !== "string") {
+    throw new Error("A valid stored file key is required.");
   }
 
-  const storageRoot = getStorageRoot();
-  const targetPath = path.join(storageRoot, storedName);
+  const command = new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: storedName,
+    Body: encryptedBuffer,
+    ContentType: "application/octet-stream",
+  });
 
-  await fs.mkdir(storageRoot, { recursive: true });
-  await fs.writeFile(targetPath, encryptedBuffer, { flag: "wx", mode: 0o600 });
+  await s3.send(command);
 
-  const relativePath = path.relative(backendRoot, targetPath);
-  return relativePath.startsWith("..") ? targetPath : relativePath;
+  // Return the S3 object key so it gets saved to MongoDB storagePath
+  return storedName;
 };
 
-const readFile = async (storagePath) =>
-  fs.readFile(resolveStoredPath(storagePath));
+const readFile = async (storedName) => {
+  if (!storedName || typeof storedName !== "string") {
+    throw new Error("A valid storage key is required.");
+  }
 
-const deleteFile = async (storagePath) => {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET,
+    Key: storedName,
+  });
+
+  const response = await s3.send(command);
+
+  // Convert the S3 incoming stream directly into a Buffer for decryption
+  const chunks = [];
+  for await (const chunk of response.Body) {
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
+};
+
+const deleteFile = async (storedName) => {
+  if (!storedName || typeof storedName !== "string") {
+    return false;
+  }
+
   try {
-    await fs.unlink(resolveStoredPath(storagePath));
+    const command = new DeleteObjectCommand({
+      Bucket: BUCKET,
+      Key: storedName,
+    });
+
+    await s3.send(command);
     return true;
   } catch (error) {
-    if (error.code === "ENOENT") {
+    if (error.name === "NoSuchKey") {
       return false;
     }
-
     throw error;
   }
 };
