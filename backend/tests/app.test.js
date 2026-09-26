@@ -1,24 +1,62 @@
-const { before, after, test } = require("node:test");
+const { before, beforeEach, after, test } = require("node:test");
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
-const fs = require("node:fs/promises");
-const path = require("node:path");
-const os = require("node:os");
+const { Readable } = require("node:stream");
 const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 const request = require("supertest");
+const { mockClient } = require("aws-sdk-client-mock");
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} = require("@aws-sdk/client-s3");
+
 const origin = "http://localhost:5173";
-let mongo, storage, app, owner, other, file, shared, ownerCookie;
+let mongo, app, owner, other, file, shared, ownerCookie;
 const content = Buffer.from(
   "Private test document. Only the owner and permitted recipients may read this.",
 );
+
+// In-memory fake S3 bucket: Key -> Buffer. Replaces real S3 calls in tests
+// so the suite never touches an actual AWS bucket.
+const s3Store = new Map();
+let s3Mock;
+
 before(async () => {
   process.env.NODE_ENV = "test";
   process.env.JWT_SECRET = crypto.randomBytes(48).toString("hex");
   process.env.ENCRYPTION_KEY = crypto.randomBytes(32).toString("hex");
   process.env.APP_ORIGIN = origin;
-  storage = await fs.mkdtemp(path.join(os.tmpdir(), "zerotrust-test-"));
-  process.env.ENCRYPTED_STORAGE_PATH = storage;
+
+  // Dummy, non-functional AWS config: storage.service.js reads these at
+  // module load time to construct its S3Client, but every call is
+  // intercepted below, so nothing ever reaches real AWS.
+  process.env.AWS_REGION = "us-east-1";
+  process.env.AWS_ACCESS_KEY_ID = "test";
+  process.env.AWS_SECRET_ACCESS_KEY = "test";
+  process.env.AWS_S3_BUCKET_NAME = "test-bucket";
+
+  s3Mock = mockClient(S3Client);
+  s3Mock.on(PutObjectCommand).callsFake((input) => {
+    s3Store.set(input.Key, Buffer.from(input.Body));
+    return {};
+  });
+  s3Mock.on(GetObjectCommand).callsFake((input) => {
+    const body = s3Store.get(input.Key);
+    if (!body) {
+      const error = new Error("The specified key does not exist.");
+      error.name = "NoSuchKey";
+      throw error;
+    }
+    return { Body: Readable.from(body) };
+  });
+  s3Mock.on(DeleteObjectCommand).callsFake((input) => {
+    s3Store.delete(input.Key);
+    return {};
+  });
+
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri());
   app = require("../src/app");
@@ -31,14 +69,9 @@ before(async () => {
   other = request.agent(app);
 });
 after(async () => {
+  s3Mock.restore();
   await mongoose.disconnect();
   if (mongo) await mongo.stop();
-  if (
-    storage &&
-    path.dirname(storage) === os.tmpdir() &&
-    path.basename(storage).startsWith("zerotrust-test-")
-  )
-    await fs.rm(storage, { recursive: true, force: true });
 });
 test("health, security headers, API 404 and unauthenticated routes", async () => {
   const health = await request(app).get("/api/health").expect(200);
@@ -108,7 +141,10 @@ test("upload stores authenticated ciphertext and returns only public fields", as
   assert.equal(file.storagePath, undefined);
   assert.equal(file.storedName, undefined);
   const stored = await require("../src/model/File").findById(file._id);
-  const ciphertext = await fs.readFile(stored.storagePath);
+  // stored.storagePath is now the S3 object key; read straight from the
+  // fake bucket instead of the filesystem.
+  const ciphertext = s3Store.get(stored.storagePath);
+  assert.ok(ciphertext, "expected an object to have been stored under this key");
   assert.equal(ciphertext.subarray(0, 4).toString(), "ZTS1");
   assert.equal(ciphertext.includes(content), false);
   const resultList = await owner.get("/api/files").expect(200);
@@ -282,7 +318,8 @@ test("deletion removes ciphertext and associated links", async () => {
     .set("Origin", origin)
     .expect(200);
   assert.equal((await owner.get("/api/share")).body.links.length, 0);
-  assert.equal((await fs.readdir(storage)).length, 0);
+  // Fake bucket should be empty once the object has been deleted from S3.
+  assert.equal(s3Store.size, 0);
   await owner.get("/api/files/" + file._id).expect(404);
 });
 test("logout invalidates existing tokens and login restores a new session", async () => {
