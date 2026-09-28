@@ -49,6 +49,10 @@ app.use(
   })
 );
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 app.use("/api", (req, res, next) => {
   res.set("Cache-Control", "no-store");
 
