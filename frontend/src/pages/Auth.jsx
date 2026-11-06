@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import isEmail from "validator/lib/isEmail";
 import { useAuth } from "../context/auth";
 import { Brand } from "../components/AppLayout";
 import Icon from "../components/Icon";
@@ -28,12 +29,19 @@ export default function Auth({ signup = false }) {
 
   async function submit(event) {
     event.preventDefault();
-    setBusy(true);
     setError("");
+
+    const cleanEmail = email.trim();
+    if (!isEmail(cleanEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    setBusy(true);
     try {
       await authenticate(signup ? "signup" : "login", {
         name,
-        email,
+        email: cleanEmail,
         password,
       });
       navigate(destination, { replace: true });
